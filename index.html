@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Consola NEXUS v7.1</title>
+    <style>
+        body { font-family: sans-serif; background-color: #1a1a1a; color: #e0e0e0; margin: 0; }
+        #app-container { display: flex; flex-direction: column; max-width: 900px; margin: 20px auto; border: 1px solid #444; background: #2a2a2a; padding: 15px; height: 90vh; box-sizing: border-box; }
+        h1 { text-align: center; color: #00aaff; margin-top: 0; }
+        #chat-history { flex-grow: 1; overflow-y: scroll; border-bottom: 1px solid #444; margin-bottom: 10px; padding: 10px; }
+        .message { margin-bottom: 12px; padding: 10px; border-radius: 8px; line-height: 1.6; }
+        .user { background-color: #334; text-align: right; }
+        .nexus { background-color: #2a3a2a; }
+        .nexus-thinking { background-color: #3a3a3a; font-style: italic; }
+        .system-info, .system-error, .system-success { font-style: italic; text-align: center; font-size: 0.9em; padding: 5px; border-radius: 4px; }
+        .system-info { background-color: #444; }
+        .system-error { background-color: #5c2a2a; }
+        .system-success { background-color: #2a5c2a; }
+        #input-area { display: flex; gap: 10px; }
+        #message-input { flex-grow: 1; border: 1px solid #555; background-color: #333; color: #e0e0e0; padding: 12px; border-radius: 5px; }
+        button { padding: 12px 18px; border: none; color: white; cursor: pointer; border-radius: 5px; font-weight: bold; }
+        #submit-button { background-color: #007bff; }
+        #save-button { background-color: #28a745; }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <h1>Consola NEXUS</h1>
+        <div id="chat-history"></div>
+        <div id="input-area">
+            <input type="text" id="message-input" placeholder="Escribí tu directiva a NEXUS..." required autocomplete="off">
+            <button id="submit-button" type="submit">Enviar</button>
+            <button id="save-button" type="button">Guardar Estado en NMP</button>
+        </div>
+    </div>
+    <script src="js/nexus-interface.js"></script>
+</body>
+</html>
