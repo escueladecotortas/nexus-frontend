@@ -3,8 +3,8 @@
 // ===================================================================
 
 const UNIFIED_BACKEND_URL = 'https://nexus-backend-1039286768008.us-central1.run.app';
-const PROCESS_DIRECTIVE_URL = `${UNIFIED_BACKEND_URL}/directive`;
-const LOAD_STATE_URL = `${UNIFIED_BACKEND_URL}/loadState`; // Asumiendo que tu main.py tiene este endpoint
+const PROCESS_DIRECTIVE_URL = `${UNIFIED_BACKEND_URL}/processDirective`;
+const LOAD_STATE_URL = `${UNIFIED_BACKEND_URL}/loadState`;
 
 const NexusAPI = {
     sendDirective: async function(userDirective) {
@@ -54,13 +54,16 @@ const NexusStateManager = {
         NexusUI.displayMessage("Sincronizando con el NMP...", 'system-info');
         try {
             const response = await fetch(LOAD_STATE_URL);
-            if (response.status === 404 || (await response.clone().json()).length === 0) {
-                document.getElementById('chat-history').innerHTML = '';
-                NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
-                NexusUI.displayMessage("Estado de proyecto vacío. Listo para recibir directivas.", 'system-info');
-                return;
+            if (!response.ok) {
+                if (response.status === 404 || (await response.clone().json()).length === 0) {
+                     document.getElementById('chat-history').innerHTML = '';
+                     NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
+                     NexusUI.displayMessage("Estado de proyecto vacío. Listo para recibir directivas.", 'system-info');
+                     return;
+                } else {
+                    throw new Error(`El NMP devolvió un error inesperado: ${response.status}`);
+                }
             }
-            if (!response.ok) throw new Error(`El NMP devolvió un error inesperado: ${response.status}`);
             
             const state = await response.json();
             document.getElementById('chat-history').innerHTML = '';
@@ -77,9 +80,9 @@ const NexusStateManager = {
             const dashboardContainer = NexusUI.displayMessage(dashboardHtml, 'system-info', true);
             dashboardContainer.style.textAlign = 'left';
         } catch (error) {
-             document.getElementById('chat-history').innerHTML = '';
-             NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
-             NexusUI.displayMessage("Estado de proyecto vacío (el documento no existe). Listo para recibir directivas.", 'system-info');
+            document.getElementById('chat-history').innerHTML = '';
+            NexusUI.displayMessage("ADVERTENCIA: Fallo al conectar con el NMP.", 'system-error');
+            NexusUI.displayMessage(`Error: ${error.message}. Verifica el backend.`, 'system-error');
         }
     }
 };
