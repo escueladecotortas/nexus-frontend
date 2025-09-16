@@ -1,11 +1,14 @@
 // ===================================================================
-// NEXUS CONSOLE v12.1 - ARQUITECTURA FINAL (MANEJO DE ESTADO VACÍO)
+// NEXUS CONSOLE v12.2 - ARQUITECTURA FINAL (CONEXIÓN A REPLIT)
 // ===================================================================
 
-const UNIFIED_BACKEND_URL = 'https://nexus-unificado-1039286768008.us-central1.run.app';
+// --- CONFIGURACIÓN CRÍTICA ---
+const UNIFIED_BACKEND_URL = 'https://a837ecbf-ef38-4d6e-9682-bdac1204c21b-00-1flwwgncof8u3.worf.replit.dev';
+
 const PROCESS_DIRECTIVE_URL = `${UNIFIED_BACKEND_URL}/directive`;
 const LOAD_STATE_URL = `${UNIFIED_BACKEND_URL}/loadState`;
 
+// ... [El resto del código es idéntico al de la v12.1] ...
 const NexusAPI = {
     sendDirective: async function(userDirective) {
         NexusUI.displayMessage(userDirective, 'user');
@@ -16,7 +19,6 @@ const NexusAPI = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userDirective: userDirective })
             });
-            // Un 404 desde el backend de directivas SÍ es un error
             if (!response.ok) throw new Error(`Error de API: ${response.status}`);
             const data = await response.json();
             return data.response;
@@ -51,24 +53,19 @@ const NexusUI = {
 };
 
 const NexusStateManager = {
-    // --- LÓGICA DE CARGA CORREGIDA ---
     fetchAndDisplayState: async function() {
         NexusUI.displayMessage("Sincronizando con el NMP...", 'system-info');
         try {
             const response = await fetch(LOAD_STATE_URL);
-            
-            // MANEJO DEL CASO 404: Si el NMP no encuentra el documento, es un estado vacío.
             if (response.status === 404) {
-                document.getElementById('chat-history').innerHTML = ''; // Limpiamos por si acaso
+                document.getElementById('chat-history').innerHTML = '';
                 NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
                 NexusUI.displayMessage("Estado de proyecto vacío. Listo para recibir directivas.", 'system-info');
-                return; // Terminamos la función aquí, es un éxito.
+                return;
             }
-            
             if (!response.ok) throw new Error(`El NMP devolvió un error inesperado: ${response.status}`);
             
             const state = await response.json();
-            
             document.getElementById('chat-history').innerHTML = '';
             NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
 
@@ -99,7 +96,6 @@ async function handleSendMessage() {
     const nexusResponse = await NexusAPI.sendDirective(userMessage);
     NexusUI.displayMessage(nexusResponse, 'nexus');
     
-    // Después de cada acción, refrescamos el dashboard para ver el estado actualizado
     await NexusStateManager.fetchAndDisplayState();
 }
 
