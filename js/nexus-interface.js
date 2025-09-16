@@ -1,27 +1,25 @@
 // ===================================================================
-// NEXUS CONSOLE v10.1 - ARQUITECTURA FINAL CORREGIDA
+// NEXUS CONSOLE v12.1 - ARQUITECTURA FINAL (MANEJO DE ESTADO VACÍO)
 // ===================================================================
 
-const PROCESS_DIRECTIVE_URL = 'https://us-central1-nexus-os-prod.cloudfunctions.net/processDirective';
-const LOAD_STATE_URL = 'https://us-central1-nexus-os-prod.cloudfunctions.net/loadState';
-const MANAGE_STATE_URL = 'https://us-central1-nexus-os-prod.cloudfunctions.net/manageState';
-const UPLOAD_STATE_URL = 'https://us-central1-nexus-os-prod.cloudfunctions.net/uploadState';
-
+const UNIFIED_BACKEND_URL = 'https://nexus-unificado-1039286768008.us-central1.run.app';
+const PROCESS_DIRECTIVE_URL = `${UNIFIED_BACKEND_URL}/directive`;
+const LOAD_STATE_URL = `${UNIFIED_BACKEND_URL}/loadState`;
 
 const NexusAPI = {
-    sendDirective: async function(userDirective, endpoint = PROCESS_DIRECTIVE_URL) {
+    sendDirective: async function(userDirective) {
         NexusUI.displayMessage(userDirective, 'user');
         const thinkingMessage = NexusUI.displayMessage("NEXUS está pensando...", 'nexus-thinking');
-        
         try {
-            const response = await fetch(endpoint, {
+            const response = await fetch(PROCESS_DIRECTIVE_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userDirective: userDirective })
             });
+            // Un 404 desde el backend de directivas SÍ es un error
             if (!response.ok) throw new Error(`Error de API: ${response.status}`);
             const data = await response.json();
-            return data.response || data.message;
+            return data.response;
         } catch (error) {
             return `Error de comunicación con el backend: ${error.message}`;
         } finally {
@@ -35,13 +33,11 @@ const NexusUI = {
         const chatContainer = document.getElementById('chat-history');
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender}`;
-        
         if (isHtml) {
             messageDiv.innerHTML = text;
         } else {
             messageDiv.innerHTML = this.formatResponse(text);
         }
-        
         chatContainer.appendChild(messageDiv);
         chatContainer.scrollTop = chatContainer.scrollHeight;
         return messageDiv;
@@ -55,35 +51,37 @@ const NexusUI = {
 };
 
 const NexusStateManager = {
-    fetchInitialState: async function() {
+    // --- LÓGICA DE CARGA CORREGIDA ---
+    fetchAndDisplayState: async function() {
+        NexusUI.displayMessage("Sincronizando con el NMP...", 'system-info');
         try {
             const response = await fetch(LOAD_STATE_URL);
+            
+            // MANEJO DEL CASO 404: Si el NMP no encuentra el documento, es un estado vacío.
             if (response.status === 404) {
-                NexusUI.displayMessage("No se encontró un estado de proyecto. El NMP está listo para una carga inicial.", 'system-info');
-                return;
+                document.getElementById('chat-history').innerHTML = ''; // Limpiamos por si acaso
+                NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
+                NexusUI.displayMessage("Estado de proyecto vacío. Listo para recibir directivas.", 'system-info');
+                return; // Terminamos la función aquí, es un éxito.
             }
-            if (!response.ok) {
-                throw new Error(`Respuesta inesperada del NMP: ${response.status}`);
-            }
-
+            
+            if (!response.ok) throw new Error(`El NMP devolvió un error inesperado: ${response.status}`);
+            
             const state = await response.json();
+            
+            document.getElementById('chat-history').innerHTML = '';
             NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
-            
-            let dashboardHtml = '';
-            
-            if (state.project_name || state.proyectoActivo) {
-                 dashboardHtml += `<h3>Proyecto Activo:</h3><ul><li><strong>Nombre:</strong> ${state.project_name || state.proyectoActivo}</li></ul>`;
-            }
-            // ... (se pueden añadir más renderizadores de dashboard aquí) ...
-            
-            if (dashboardHtml) {
-                dashboardHtml += '<hr>';
-                const dashboardContainer = NexusUI.displayMessage(dashboardHtml, 'system-info', true);
-                dashboardContainer.style.textAlign = 'left';
-            } else {
-                 NexusUI.displayMessage("Estado de proyecto vacío. Listo para recibir directivas.", 'system-info');
-            }
 
+            const dashboardHtml = `
+                <h3>Proyecto Activo: ${state.proyectoActivo || "No definido"}</h3>
+                <hr>
+                <h4>Último Logro:</h4>
+                <ul><li>${state.ultimoLogro ? state.ultimoLogro.descripcion : 'N/A'}</li></ul>
+                <h4>Tarea Crítica Agendada:</h4>
+                <ul><li>${state.tareaAgendada ? state.tareaAgendada.nombre : 'N/A'}</li></ul>
+            `;
+            const dashboardContainer = NexusUI.displayMessage(dashboardHtml, 'system-info', true);
+            dashboardContainer.style.textAlign = 'left';
         } catch (error) {
             NexusUI.displayMessage(`ERROR AL CARGAR ESTADO: ${error.message}`, 'system-error');
         }
@@ -93,38 +91,31 @@ const NexusStateManager = {
 const messageInput = document.getElementById('message-input');
 const submitButton = document.getElementById('submit-button');
 
-async function handleSendMessage(userMessage) {
+async function handleSendMessage() {
+    const userMessage = messageInput.value.trim();
     if (!userMessage) return;
-    
-    let endpoint = PROCESS_DIRECTIVE_URL;
-    let directive = userMessage;
-
-    if (userMessage.startsWith('!actualizar-estado')) {
-        endpoint = MANAGE_STATE_URL;
-        directive = userMessage.substring('!actualizar-estado '.length).trim();
-    }
-    
-    const nexusResponse = await NexusAPI.sendDirective(directive, endpoint);
-    NexusUI.displayMessage(nexusResponse, 'nexus');
-
-    // Refrescar el dashboard después de cada acción para ver los cambios
-    await NexusStateManager.fetchInitialState();
-    
     messageInput.value = '';
+    
+    const nexusResponse = await NexusAPI.sendDirective(userMessage);
+    NexusUI.displayMessage(nexusResponse, 'nexus');
+    
+    // Después de cada acción, refrescamos el dashboard para ver el estado actualizado
+    await NexusStateManager.fetchAndDisplayState();
 }
 
 window.addEventListener('load', async () => {
-    NexusUI.displayMessage("Inicializando conexión con el NMP...", 'system-info');
-    await NexusStateManager.fetchInitialState();
+    await NexusStateManager.fetchAndDisplayState();
 });
 
-submitButton.addEventListener('click', () => handleSendMessage(messageInput.value.trim()));
-
+submitButton.addEventListener('click', handleSendMessage);
 messageInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { 
         e.preventDefault();
-        handleSendMessage(messageInput.value.trim());
+        handleSendMessage();
     }
 });
 
-// ... (Aquí puede ir la función uploadState si la necesitás como herramienta de debug) ...
+const saveButton = document.getElementById('save-button');
+if (saveButton) {
+    saveButton.style.display = 'none';
+}
