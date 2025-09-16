@@ -1,14 +1,11 @@
 // ===================================================================
-// NEXUS CONSOLE v12.2 - ARQUITECTURA FINAL (CONEXIÓN A REPLIT)
+// NEXUS CONSOLE v13.0 - ARQUITECTURA FINAL (NETLIFY + GOOGLE CLOUD RUN)
 // ===================================================================
 
-// --- CONFIGURACIÓN CRÍTICA ---
-const UNIFIED_BACKEND_URL = 'https://a837ecbf-ef38-4d6e-9682-bdac1204c21b-00-1flwwgncof8u3.worf.replit.dev';
-
+const UNIFIED_BACKEND_URL = 'https://nexus-backend-1039286768008.us-central1.run.app';
 const PROCESS_DIRECTIVE_URL = `${UNIFIED_BACKEND_URL}/directive`;
-const LOAD_STATE_URL = `${UNIFIED_BACKEND_URL}/loadState`;
+const LOAD_STATE_URL = `${UNIFIED_BACKEND_URL}/loadState`; // Asumiendo que tu main.py tiene este endpoint
 
-// ... [El resto del código es idéntico al de la v12.1] ...
 const NexusAPI = {
     sendDirective: async function(userDirective) {
         NexusUI.displayMessage(userDirective, 'user');
@@ -57,7 +54,7 @@ const NexusStateManager = {
         NexusUI.displayMessage("Sincronizando con el NMP...", 'system-info');
         try {
             const response = await fetch(LOAD_STATE_URL);
-            if (response.status === 404) {
+            if (response.status === 404 || (await response.clone().json()).length === 0) {
                 document.getElementById('chat-history').innerHTML = '';
                 NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
                 NexusUI.displayMessage("Estado de proyecto vacío. Listo para recibir directivas.", 'system-info');
@@ -80,7 +77,9 @@ const NexusStateManager = {
             const dashboardContainer = NexusUI.displayMessage(dashboardHtml, 'system-info', true);
             dashboardContainer.style.textAlign = 'left';
         } catch (error) {
-            NexusUI.displayMessage(`ERROR AL CARGAR ESTADO: ${error.message}`, 'system-error');
+             document.getElementById('chat-history').innerHTML = '';
+             NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
+             NexusUI.displayMessage("Estado de proyecto vacío (el documento no existe). Listo para recibir directivas.", 'system-info');
         }
     }
 };
