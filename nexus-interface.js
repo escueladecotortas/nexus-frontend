@@ -51,7 +51,6 @@ const NexusUI = {
 
 const NexusStateManager = {
     fetchAndDisplayState: async function() {
-        NexusUI.displayMessage("Sincronizando con el NMP...", 'system-info');
         try {
             const response = await fetch(LOAD_STATE_URL);
             if (!response.ok) {
@@ -59,6 +58,15 @@ const NexusStateManager = {
                      document.getElementById('chat-history').innerHTML = '';
                      NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
                      NexusUI.displayMessage("Estado de proyecto vacío. Listo para recibir directivas.", 'system-info');
+                     // Inyectar un estado inicial en el dashboard si no hay datos.
+                     document.getElementById('dashboard-content').innerHTML = `
+                        <p><strong>Proyecto Activo:</strong> No definido</p>
+                        <hr>
+                        <h4>Último Logro:</h4>
+                        <ul><li>N/A</li></ul>
+                        <h4>Tarea Crítica Agendada:</h4>
+                        <ul><li>N/A</li></ul>
+                     `;
                      return;
                 } else {
                     throw new Error(`El NMP devolvió un error inesperado: ${response.status}`);
@@ -66,19 +74,22 @@ const NexusStateManager = {
             }
             
             const state = await response.json();
-            document.getElementById('chat-history').innerHTML = '';
-            NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
-
-            const dashboardHtml = `
-                <h3>Proyecto Activo: ${state.proyectoActivo || "No definido"}</h3>
+            
+            // Inyectar el HTML del dashboard en el nuevo contenedor
+            document.getElementById('dashboard-content').innerHTML = `
+                <p><strong>Proyecto Activo:</strong> ${state.proyectoActivo || "No definido"}</p>
                 <hr>
                 <h4>Último Logro:</h4>
                 <ul><li>${state.ultimoLogro ? state.ultimoLogro.descripcion : 'N/A'}</li></ul>
                 <h4>Tarea Crítica Agendada:</h4>
                 <ul><li>${state.tareaAgendada ? state.tareaAgendada.nombre : 'N/A'}</li></ul>
             `;
-            const dashboardContainer = NexusUI.displayMessage(dashboardHtml, 'system-info', true);
-            dashboardContainer.style.textAlign = 'left';
+
+            // Mensajes de sistema en el chat
+            document.getElementById('chat-history').innerHTML = '';
+            NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
+            NexusUI.displayMessage("Estado de proyecto cargado.", 'system-info');
+
         } catch (error) {
             document.getElementById('chat-history').innerHTML = '';
             NexusUI.displayMessage("ADVERTENCIA: Fallo al conectar con el NMP.", 'system-error');
@@ -86,6 +97,7 @@ const NexusStateManager = {
         }
     }
 };
+
 
 const messageInput = document.getElementById('message-input');
 const submitButton = document.getElementById('submit-button');
@@ -97,6 +109,8 @@ async function handleSendMessage() {
     
     const nexusResponse = await NexusAPI.sendDirective(userMessage);
     NexusUI.displayMessage(nexusResponse, 'nexus');
+    // Agregar un retardo para permitir que el backend actualice el estado del NMP
+    await new Promise(resolve => setTimeout(resolve, 3000)); // Espera 3 segundos
     
     await NexusStateManager.fetchAndDisplayState();
 }
