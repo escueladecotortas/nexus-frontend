@@ -97,6 +97,8 @@ async function handleSendMessage() {
     
     const nexusResponse = await NexusAPI.sendDirective(userMessage);
     NexusUI.displayMessage(nexusResponse, 'nexus');
+    // Agregar un retardo para permitir que el backend actualice el estado del NMP
+    await new Promise(resolve => setTimeout(resolve, 3000)); // Espera 3 segundos
     
     await NexusStateManager.fetchAndDisplayState();
 }
