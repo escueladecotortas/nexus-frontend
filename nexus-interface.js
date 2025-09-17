@@ -1,5 +1,5 @@
 // ===================================================================
-// NEXUS CONSOLE v13.0 - ARQUITECTURA FINAL (NETLIFY + GOOGLE CLOUD RUN)
+// NEXUS CONSOLE v13.1 - ARQUITECTURA FINAL (NETLIFY + GOOGLE CLOUD RUN)
 // ===================================================================
 
 const UNIFIED_BACKEND_URL = 'https://nexus-backend-1039286768008.us-central1.run.app';
@@ -54,9 +54,6 @@ const NexusStateManager = {
             const response = await fetch(LOAD_STATE_URL);
             if (!response.ok) {
                 if (response.status === 404 || (await response.clone().json()).length === 0) {
-                     document.getElementById('chat-history').innerHTML = '';
-                     NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
-                     NexusUI.displayMessage("Estado de proyecto vacío. Listo para recibir directivas.", 'system-info');
                      document.getElementById('dashboard-content').innerHTML = `
                         <p><strong>Proyecto Activo:</strong> No definido</p>
                         <hr>
@@ -81,21 +78,23 @@ const NexusStateManager = {
                 <h4>Tarea Crítica Agendada:</h4>
                 <ul><li>${state.tareaAgendada ? state.tareaAgendada.nombre : 'N/A'}</li></ul>
             `;
-
-            document.getElementById('chat-history').innerHTML = '';
-            NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
-            NexusUI.displayMessage("Estado de proyecto cargado.", 'system-info');
-
         } catch (error) {
-            document.getElementById('chat-history').innerHTML = '';
-            NexusUI.displayMessage("ADVERTENCIA: Fallo al conectar con el NMP.", 'system-error');
-            NexusUI.displayMessage(`Error: ${error.message}. Verifica el backend.`, 'system-error');
+            console.error('Error fetching state:', error);
         }
     }
 };
 
 const messageInput = document.getElementById('message-input');
 const submitButton = document.getElementById('submit-button');
+const chatHistory = document.getElementById('chat-history');
+
+async function initializeConsole() {
+    chatHistory.innerHTML = '';
+    NexusUI.displayMessage("NEXUS 3.2 en línea.", 'system-info');
+    NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
+    NexusUI.displayMessage("Estado de proyecto vacío. Listo para recibir directivas.", 'system-info');
+    await NexusStateManager.fetchAndDisplayState();
+}
 
 async function handleSendMessage() {
     const userMessage = messageInput.value.trim();
@@ -113,10 +112,7 @@ async function handleSendMessage() {
     await NexusStateManager.fetchAndDisplayState();
 }
 
-window.addEventListener('load', async () => {
-    await NexusStateManager.fetchAndDisplayState();
-});
-
+window.addEventListener('load', initializeConsole);
 submitButton.addEventListener('click', handleSendMessage);
 messageInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { 
@@ -124,8 +120,3 @@ messageInput.addEventListener('keypress', (e) => {
         handleSendMessage();
     }
 });
-
-const saveButton = document.getElementById('save-button');
-if (saveButton) {
-    saveButton.style.display = 'none';
-}
