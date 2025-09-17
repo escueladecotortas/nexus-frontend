@@ -8,7 +8,6 @@ const LOAD_STATE_URL = `${UNIFIED_BACKEND_URL}/loadState`;
 
 const NexusAPI = {
     sendDirective: async function(userDirective) {
-        NexusUI.displayMessage(userDirective, 'user');
         const thinkingMessage = NexusUI.displayMessage("NEXUS está pensando...", 'nexus-thinking');
         try {
             const response = await fetch(PROCESS_DIRECTIVE_URL, {
@@ -58,7 +57,6 @@ const NexusStateManager = {
                      document.getElementById('chat-history').innerHTML = '';
                      NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
                      NexusUI.displayMessage("Estado de proyecto vacío. Listo para recibir directivas.", 'system-info');
-                     // Inyectar un estado inicial en el dashboard si no hay datos.
                      document.getElementById('dashboard-content').innerHTML = `
                         <p><strong>Proyecto Activo:</strong> No definido</p>
                         <hr>
@@ -75,7 +73,6 @@ const NexusStateManager = {
             
             const state = await response.json();
             
-            // Inyectar el HTML del dashboard en el nuevo contenedor
             document.getElementById('dashboard-content').innerHTML = `
                 <p><strong>Proyecto Activo:</strong> ${state.proyectoActivo || "No definido"}</p>
                 <hr>
@@ -85,7 +82,6 @@ const NexusStateManager = {
                 <ul><li>${state.tareaAgendada ? state.tareaAgendada.nombre : 'N/A'}</li></ul>
             `;
 
-            // Mensajes de sistema en el chat
             document.getElementById('chat-history').innerHTML = '';
             NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
             NexusUI.displayMessage("Estado de proyecto cargado.", 'system-info');
@@ -98,19 +94,21 @@ const NexusStateManager = {
     }
 };
 
-
 const messageInput = document.getElementById('message-input');
 const submitButton = document.getElementById('submit-button');
 
 async function handleSendMessage() {
     const userMessage = messageInput.value.trim();
     if (!userMessage) return;
-    messageInput.value = '';
     
+    NexusUI.displayMessage(userMessage, 'user');
+    messageInput.value = '';
+
     const nexusResponse = await NexusAPI.sendDirective(userMessage);
+    
     NexusUI.displayMessage(nexusResponse, 'nexus');
-    // Agregar un retardo para permitir que el backend actualice el estado del NMP
-    await new Promise(resolve => setTimeout(resolve, 3000)); // Espera 3 segundos
+
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
     await NexusStateManager.fetchAndDisplayState();
 }
