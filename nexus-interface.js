@@ -103,9 +103,12 @@ async function handleSendMessage() {
     NexusUI.displayMessage(userMessage, 'user');
     messageInput.value = '';
 
-    const nexusResponse = await NexusAPI.sendDirective(userMessage);
-    
-    NexusUI.displayMessage(nexusResponse, 'nexus');
+    try {
+        const nexusResponse = await NexusAPI.sendDirective(userMessage);
+        NexusUI.displayMessage(nexusResponse, 'nexus');
+    } catch (error) {
+        NexusUI.displayMessage(`Error: ${error.message}. Por favor, revisa el backend.`, 'system-error');
+    }
 
     await new Promise(resolve => setTimeout(resolve, 3000));
     
