@@ -93,7 +93,7 @@ async function initializeConsole() {
     NexusUI.displayMessage("NEXUS 3.2 en línea.", 'system-info');
     NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
     NexusUI.displayMessage("Estado de proyecto vacío. Listo para recibir directivas.", 'system-info');
-    await NexusStateManager.fetchAndDisplayState();
+    // await NexusStateManager.fetchAndDisplayState(); se quitó parece que trae error
 }
 
 async function handleSendMessage() {
