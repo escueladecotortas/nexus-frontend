@@ -1,101 +1,69 @@
 // ===================================================================
-// NEXUS CONSOLE v13.1 - ARQUITECTURA FINAL (NETLIFY + GOOGLE CLOUD RUN)
+// NEXUS CONSOLE v13.2 - ARQUITECTURA SIMPLIFICADA Y FUNCIONAL
 // ===================================================================
 
-const UNIFIED_BACKEND_URL = 'https://eo6vuwaihbwk11h.m.pipedream.net';
-const PROCESS_DIRECTIVE_URL = `${UNIFIED_BACKEND_URL}/processDirective`;
-const LOAD_STATE_URL = `${UNIFIED_BACKEND_URL}/loadState`;
+// URL ÚNICA Y DEFINITIVA DEL BACKEND EN PIPEDREAM
+const BACKEND_URL = 'https://eo6vuwaihbwk11h.m.pipedream.net';
 
 const NexusAPI = {
     sendDirective: async function(userDirective) {
+        // Muestra el mensaje de "pensando"
         const thinkingMessage = NexusUI.displayMessage("NEXUS está pensando...", 'nexus-thinking');
         try {
-            const response = await fetch(PROCESS_DIRECTIVE_URL, {
+            // Llama al backend
+            const response = await fetch(BACKEND_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userDirective: userDirective })
             });
+
             if (!response.ok) throw new Error(`Error de API: ${response.status}`);
+            
             const data = await response.json();
             return data.response;
         } catch (error) {
+            // Muestra un mensaje de error claro en la UI
             return `Error de comunicación con el backend: ${error.message}`;
         } finally {
+            // Elimina el mensaje de "pensando" sin importar el resultado
             thinkingMessage.remove();
         }
     }
 };
 
 const NexusUI = {
-    displayMessage: function(text, sender, isHtml = false) {
+    displayMessage: function(text, sender) {
         const chatContainer = document.getElementById('chat-history');
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender}`;
-        if (isHtml) {
-            messageDiv.innerHTML = text;
-        } else {
-            messageDiv.innerHTML = this.formatResponse(text);
-        }
-        chatContainer.appendChild(messageDiv);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-        return messageDiv;
-    },
-    formatResponse: function(text) {
+        
+        // Formatea el texto para mostrar saltos de línea y negritas
         let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         html = html.replace(/\n/g, '<br>');
         html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        return html;
+        
+        messageDiv.innerHTML = html;
+        chatContainer.appendChild(messageDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        return messageDiv;
     }
 };
 
-const NexusStateManager = {
-    fetchAndDisplayState: async function() {
-        try {
-            const response = await fetch(LOAD_STATE_URL);
-            if (!response.ok) {
-                if (response.status === 404 || (await response.clone().json()).length === 0) {
-                     document.getElementById('dashboard-content').innerHTML = `
-                        <p><strong>Proyecto Activo:</strong> No definido</p>
-                        <hr>
-                        <h4>Último Logro:</h4>
-                        <ul><li>N/A</li></ul>
-                        <h4>Tarea Crítica Agendada:</h4>
-                        <ul><li>N/A</li></ul>
-                     `;
-                     return;
-                } else {
-                    throw new Error(`El NMP devolvió un error inesperado: ${response.status}`);
-                }
-            }
-            
-            const state = await response.json();
-            
-            document.getElementById('dashboard-content').innerHTML = `
-                <p><strong>Proyecto Activo:</strong> ${state.proyectoActivo || "No definido"}</p>
-                <hr>
-                <h4>Último Logro:</h4>
-                <ul><li>${state.ultimoLogro ? state.ultimoLogro.descripcion : 'N/A'}</li></ul>
-                <h4>Tarea Crítica Agendada:</h4>
-                <ul><li>${state.tareaAgendada ? state.tareaAgendada.nombre : 'N/A'}</li></ul>
-            `;
-        } catch (error) {
-            console.error('Error fetching state:', error);
-        }
-    }
-};
+// Se eliminó NexusStateManager porque ya no es necesario, simplificando el código.
 
 const messageInput = document.getElementById('message-input');
 const submitButton = document.getElementById('submit-button');
 const chatHistory = document.getElementById('chat-history');
 
+// Inicializa la consola con mensajes de bienvenida
 async function initializeConsole() {
     chatHistory.innerHTML = '';
     NexusUI.displayMessage("NEXUS 3.2 en línea.", 'system-info');
     NexusUI.displayMessage("CONEXIÓN ESTABLECIDA CON EL NMP.", 'system-success');
-    NexusUI.displayMessage("Estado de proyecto vacío. Listo para recibir directivas.", 'system-info');
-    // await NexusStateManager.fetchAndDisplayState(); se quitó parece que trae error
+    NexusUI.displayMessage("Listo para recibir directivas.", 'system-info');
 }
 
+// Maneja el envío de mensajes
 async function handleSendMessage() {
     const userMessage = messageInput.value.trim();
     if (!userMessage) return;
@@ -107,14 +75,13 @@ async function handleSendMessage() {
         const nexusResponse = await NexusAPI.sendDirective(userMessage);
         NexusUI.displayMessage(nexusResponse, 'nexus');
     } catch (error) {
-        NexusUI.displayMessage(`Error: ${error.message}. Por favor, revisa el backend.`, 'system-error');
+        NexusUI.displayMessage(`Error crítico: ${error.message}.`, 'system-error');
     }
-
-    await new Promise(resolve => setTimeout(resolve, 3000));
     
-    await NexusStateManager.fetchAndDisplayState();
+    // Se eliminó la llamada final a fetchAndDisplayState que causaba el error.
 }
 
+// --- Event Listeners ---
 window.addEventListener('load', initializeConsole);
 submitButton.addEventListener('click', handleSendMessage);
 messageInput.addEventListener('keypress', (e) => {
