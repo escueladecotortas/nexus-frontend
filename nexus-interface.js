@@ -2,7 +2,7 @@
 // NEXUS CONSOLE v13.1 - ARQUITECTURA FINAL (NETLIFY + GOOGLE CLOUD RUN)
 // ===================================================================
 
-const UNIFIED_BACKEND_URL = 'https://nexus-backend-1039286768008.us-central1.run.app';
+const UNIFIED_BACKEND_URL = 'https://us-central1-nexus-os-prod.cloudfunctions.net/nexus-backend-function';
 const PROCESS_DIRECTIVE_URL = `${UNIFIED_BACKEND_URL}/processDirective`;
 const LOAD_STATE_URL = `${UNIFIED_BACKEND_URL}/loadState`;
 
