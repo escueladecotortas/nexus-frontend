@@ -21,6 +21,7 @@
             --color-info: #3498DB;
             --color-user: #2C3E50;
             --color-nexus: #8e44ad;
+            --color-thinking: #6A1B9A;
         }
 
         body, html {
@@ -33,6 +34,19 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            user-select: none;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(26, 26, 46, 0.9), rgba(26, 26, 46, 0.9)), repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 2px);
+            z-index: -1;
+            opacity: 0.8;
         }
 
         .header {
@@ -40,12 +54,14 @@
             padding: 10px 20px;
             text-align: center;
             border-bottom: 2px solid var(--color-secondary);
+            animation: glow-border 1.5s infinite alternate;
         }
 
         .header h1 {
             margin: 0;
             font-size: 1.5rem;
             color: var(--color-accent);
+            text-shadow: 0 0 5px var(--color-accent);
         }
 
         .main-container {
@@ -118,6 +134,14 @@
             color: #ECF0F1;
             align-self: flex-end;
         }
+        
+        .message.nexus-thinking {
+            background-color: var(--color-thinking);
+            color: #fff;
+            align-self: flex-end;
+            font-style: italic;
+            animation: pulse-dot 1.5s infinite ease-in-out;
+        }
 
         .message.system-info {
             background-color: var(--color-info);
@@ -155,6 +179,7 @@
             font-family: 'Roboto Mono', monospace;
             font-size: 1rem;
             box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            transition: box-shadow 0.3s ease;
         }
 
         #message-input:focus {
@@ -188,6 +213,17 @@
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes glow-border {
+            from { box-shadow: 0 0 5px var(--color-secondary); }
+            to { box-shadow: 0 0 10px var(--color-secondary); }
+        }
+
+        @keyframes pulse-dot {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
