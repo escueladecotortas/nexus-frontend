@@ -3,8 +3,7 @@
 // ===================================================================
 
 // URL ÚNICA Y DEFINITIVA DEL BACKEND EN PIPEDREAM
-const BACKEND_URL = 'https://eo6vuwaihbwk11h.m.pipedream.net';
-
+const BACKEND_URL = 'https://web-production-5ccf6.up.railway.app';
 const NexusAPI = {
     sendDirective: async function(userDirective) {
         // Muestra el mensaje de "pensando"
