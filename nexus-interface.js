@@ -10,7 +10,7 @@ const NexusAPI = {
         const thinkingMessage = NexusUI.displayMessage("NEXUS está pensando...", 'nexus-thinking');
         try {
             // Llama al backend
-            const response = await fetch(BACKEND_URL, {
+            const response = await fetch(`${BACKEND_URL}/processDirective`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userDirective: userDirective })
