@@ -5,12 +5,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const fileInput = document.getElementById('file-input');
     const fileNameSpan = document.getElementById('file-name');
 
-    const BASE_URL = "https://nexus-backend-arg.up.railway.app"; // URL de tu backend
-
+    const BASE_URL = "https://nexus-backend-arg.up.railway.app";
+    const DAILY_TOKEN_LIMIT = 100000;
+    
     let fileContent = "";
+    let totalTokensSession = 0;
 
-    // Dibuja el medidor de tokens
-    function drawTokenGauge(percentage) {
+    // Dibuja o actualiza el medidor de tokens
+    function drawTokenGauge(tokens) {
+        const percentage = Math.min((tokens / DAILY_TOKEN_LIMIT) * 100, 100);
+        const gaugeColor = percentage > 80 ? "#FF0000" : (percentage > 50 ? "#FFA500" : "#FF4F00");
+
         const data = [{
             type: "indicator",
             mode: "gauge+number",
@@ -19,18 +24,19 @@ document.addEventListener('DOMContentLoaded', function () {
             domain: { x: [0, 1], y: [0, 1] },
             gauge: {
                 shape: "angular",
-                axis: { range: [0, 100] },
-                bar: { color: "#FF4F00", thickness: 0.8 },
-                bgcolor: "#282C31",
+                axis: { range: [0, 100], tickwidth: 1, tickcolor: "#444" },
+                bar: { color: gaugeColor, thickness: 0.8 },
+                bgcolor: "rgba(0,0,0,0.1)",
             }
         }];
         const layout = {
             paper_bgcolor: "rgba(0,0,0,0)",
             plot_bgcolor: 'rgba(0,0,0,0)',
-            height: 250,
-            margin: { l: 20, r: 20, t: 0, b: 10 }
+            height: 200,
+            margin: { l: 20, r: 20, t: 20, b: 20 },
+            font: { color: "#EAECEE", family: "'Exo 2', sans-serif" }
         };
-        Plotly.newPlot('token-gauge-container', data, layout, {displayModeBar: false});
+        Plotly.newPlot('token-gauge-container', data, layout, {displayModeBar: false, responsive: true});
     }
 
     // Manejo de la subida de archivos
@@ -60,6 +66,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
         addMessage('user', userDirective);
         chatInput.value = "";
+        sendButton.disabled = true;
+
+        // Mensaje de "Pensando..."
+        const thinkingMsg = document.createElement('div');
+        thinkingMsg.classList.add('message', 'ai-message');
+        thinkingMsg.textContent = '🧠 Procesando...';
+        chatWindow.appendChild(thinkingMsg);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
 
         try {
             const response = await fetch(`${BASE_URL}/processDirective`, {
@@ -67,6 +81,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userDirective, fileContent })
             });
+            
+            chatWindow.removeChild(thinkingMsg); // Elimina el mensaje "Pensando..."
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -74,14 +90,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const data = await response.json();
             addMessage('ai', data.response);
-            // Aquí actualizarías el medidor de tokens con data.token_usage si es necesario
+            
+            // Actualiza el contador de tokens y el medidor
+            if (data.token_usage) {
+                totalTokensSession += data.token_usage.total_tokens;
+                drawTokenGauge(totalTokensSession);
+            }
             
         } catch (error) {
+            chatWindow.removeChild(thinkingMsg);
             addMessage('ai', `Error de conexión: ${error.message}`);
         } finally {
-            fileContent = ""; // Resetea el contenido del archivo después de enviar
+            fileContent = "";
             fileNameSpan.textContent = "Ningún archivo seleccionado";
             fileInput.value = "";
+            sendButton.disabled = false;
+            chatInput.focus();
         }
     }
 
@@ -94,6 +118,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Inicializar
-    drawTokenGauge(0); // Dibuja el medidor en 0% al cargar
+    drawTokenGauge(totalTokensSession);
     addMessage('ai', 'NEXUS CORE en línea. Esperando directiva.');
 });
